@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Beavis & Butt-head Hock-a-loogie</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #008080; /* Windows 95 classic teal desktop */
+      font-family: 'VT323', monospace;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    /* Windows 95 3D bevels */
+    .win95-window {
+      background-color: #c0c0c0;
+      border: 3px solid;
+      border-color: #dfdfdf #404040 #404040 #dfdfdf;
+      box-shadow: 2px 2px 0px #000;
+    }
+
+    .win95-titlebar {
+      background: linear-gradient(90deg, #000080, #1084d0);
+      color: #ffffff;
+      padding: 2px 4px;
+      font-family: 'MS Sans Serif', Tahoma, sans-serif;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+
+    .win95-btn {
+      background-color: #c0c0c0;
+      border: 2px solid;
+      border-color: #ffffff #404040 #404040 #ffffff;
+      box-shadow: 1px 1px 0px #000;
+      font-family: 'MS Sans Serif', Tahoma, sans-serif;
+      font-size: 11px;
+      line-height: 1;
+      padding: 2px 6px;
+      color: #000;
+    }
+
+    .win95-btn:active {
+      border-color: #404040 #ffffff #ffffff #404040;
+      box-shadow: none;
+      transform: translate(1px, 1px);
+    }
+
+    .win95-sunken {
+      border: 2px solid;
+      border-color: #404040 #ffffff #ffffff #404040;
+      background-color: #000;
+    }
+
+    .arcade-font {
+      font-family: 'VT323', monospace;
+    }
+
+    /* Pixelated look for canvas */
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-1 sm:p-3">
+
+  <!-- Windows 95 Window Container -->
+  <div class="win95-window w-full max-w-[840px] flex flex-col overflow-hidden">
+
+    <!-- Title Bar -->
+    <div class="win95-titlebar flex items-center justify-between select-none">
+      <div class="flex items-center gap-1.5">
+        <span class="text-sm">🪟</span>
+        <span>Beavis & Butt-head Hock-a-loogie</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button class="win95-btn h-4 w-4 flex items-center justify-center font-black">_</button>
+        <button class="win95-btn h-4 w-4 flex items-center justify-center font-black">□</button>
+        <button class="win95-btn h-4 w-4 flex items-center justify-center font-black text-red-700">✕</button>
+      </div>
+    </div>
+
+    <!-- Win95 Menu Bar -->
+    <div class="flex items-center gap-3 px-2 py-0.5 bg-[#c0c0c0] text-black text-xs font-sans border-b border-[#808080]">
+      <span class="hover:underline cursor-pointer"><u class="font-bold">F</u>ile</span>
+      <span class="hover:underline cursor-pointer"><u class="font-bold">W</u>indow</span>
+      <span class="hover:underline cursor-pointer"><u class="font-bold">H</u>elp</span>
+      <div class="ml-auto text-[11px] text-gray-700">MTV Interactive (1995)</div>
+    </div>
+
+    <!-- Main Canvas Viewport Area -->
+    <div class="relative w-full aspect-[4/3] max-h-[580px] win95-sunken overflow-hidden">
+      <canvas id="gameCanvas" width="640" height="480" class="w-full h-full block bg-black"></canvas>
+
+      <!-- Win / Level Transition / Game Over Overlay -->
+      <div id="endOverlay" class="absolute inset-0 bg-black/80 hidden flex-col items-center justify-center p-4 text-center z-30">
+        <div class="win95-window p-6 max-w-sm w-full text-black">
+          <div class="win95-titlebar text-left mb-3" id="modalTitleBar">System Message</div>
+          <h2 id="endTitle" class="text-3xl arcade-font text-red-700 mb-2 font-bold">GAME OVER, DORK!</h2>
+          <p id="endDesc" class="text-base font-sans mb-4">"Huh-huh... That sucked."</p>
+          <div class="text-2xl arcade-font mb-4 text-blue-900" id="finalScoreText">SCORE: 0 / 20</div>
+          <button id="modalActionBtn" class="win95-btn text-base py-1.5 px-6 font-bold uppercase w-full">Play Again (Enter)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Controls & Character Selector -->
+    <div class="bg-[#c0c0c0] p-2 flex flex-wrap items-center justify-between gap-2 border-t border-[#dfdfdf] text-black select-none text-xs font-sans">
+      <div class="flex items-center gap-2">
+        <button id="btnSwitchChar" class="win95-btn font-bold px-3 py-1 flex items-center gap-1.5">
+          <span>🔄</span>
+          <span>SPITTER: <b id="charNameDisplay" class="text-blue-900">BUTT-HEAD</b> [TAB]</span>
+        </button>
+        <span class="hidden sm:inline text-gray-700">| Move: [← / →] or [A / D] | Spit: [SPACE]</span>
+      </div>
+
+      <!-- Mobile On-Screen Buttons -->
+      <div class="flex items-center gap-1.5 w-full sm:w-auto justify-center sm:justify-end">
+        <button id="btnMoveLeft" class="win95-btn font-bold px-4 py-2 sm:py-1 text-sm">◀ LEFT</button>
+        <button id="btnSpit" class="win95-btn font-bold px-6 py-2 sm:py-1 text-sm bg-lime-200 border-lime-600 text-green-900">💦 SPIT!</button>
+        <button id="btnMoveRight" class="win95-btn font-bold px-4 py-2 sm:py-1 text-sm">RIGHT ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================
+       AUDIO SYNTHESIZER (Pure Web Audio API - Retro 90s sound effects)
+       ========================================================= */
+    class RetroAudio {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+      }
+
+      // Snort and "Ptooey!" spit sound
+      playSpit(isBeavis) {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // Snort noise burst
+        const bufferSize = this.ctx.sampleRate * 0.08;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(isBeavis ? 1200 : 700, now);
+
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.3, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+        noise.start(now);
+
+        // Sharp descending whistle tone
+        const osc = this.ctx.createOscillator();
+        const oscGain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(isBeavis ? 850 : 580, now + 0.03);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.25);
+
+        oscGain.gain.setValueAtTime(0.35, now + 0.03);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+        osc.connect(oscGain);
+        oscGain.connect(this.ctx.destination);
+        osc.start(now + 0.03);
+        osc.stop(now + 0.26);
+      }
+
+      // Wet splat on ground or target
+      playSplat(isTarget) {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(isTarget ? 240 : 130, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.12);
+
+        gain.gain.setValueAtTime(isTarget ? 0.45 : 0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.13);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.14);
+
+        if (isTarget) {
+          // Angry squeak vocal
+          const voc = this.ctx.createOscillator();
+          const vocGain = this.ctx.createGain();
+          voc.type = 'square';
+          voc.frequency.setValueAtTime(380, now + 0.02);
+          voc.frequency.linearRampToValueAtTime(560, now + 0.14);
+          voc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+
+          vocGain.gain.setValueAtTime(0.2, now + 0.02);
+          vocGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+          voc.connect(vocGain);
+          vocGain.connect(this.ctx.destination);
+          voc.start(now + 0.02);
+          voc.stop(now + 0.31);
+        }
+      }
+
+      // Authentic chuckle
+      playLaughter(isBeavis) {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const count = isBeavis ? 4 : 3;
+        for (let i = 0; i < count; i++) {
+          const t = now + i * 0.12;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = isBeavis ? 'sawtooth' : 'triangle';
+          osc.frequency.setValueAtTime(isBeavis ? 280 + i * 20 : 160 - (i % 2) * 20, t);
+          osc.frequency.exponentialRampToValueAtTime(90, t + 0.09);
+
+          gain.gain.setValueAtTime(0.25, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.11);
+        }
+      }
+    }
+
+    /* =========================================================
+       GAME STATE & ASSETS
+       ========================================================= */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const audio = new RetroAudio();
+
+    const INTERNAL_W = 640;
+    const INTERNAL_H = 480;
+
+    // 3-Level Progression Setup
+    const LEVEL_CONFIGS = [
+      {
+        level: 1,
+        targetScore: 20,
+        timeLimit: 30,
+        pedSpeedMult: 1.0,
+        spawnIntervalMin: 0.8,
+        spawnIntervalMax: 1.3,
+        maxPedsOnScreen: 7,
+        carInterval: 5.0,
+        intro: "LEVEL 1: WARM UP - 20 HITS IN 30 SEC"
+      },
+      {
+        level: 2,
+        targetScore: 35,
+        timeLimit: 30,
+        pedSpeedMult: 1.5,
+        spawnIntervalMin: 0.45,
+        spawnIntervalMax: 0.8,
+        maxPedsOnScreen: 10,
+        carInterval: 3.5,
+        intro: "LEVEL 2: RUSH HOUR - 35 HITS IN 30 SEC"
+      },
+      {
+        level: 3,
+        targetScore: 50,
+        timeLimit: 30,
+        pedSpeedMult: 2.1,
+        spawnIntervalMin: 0.25,
+        spawnIntervalMax: 0.55,
+        maxPedsOnScreen: 14,
+        carInterval: 2.4,
+        intro: "LEVEL 3: TURBO INK CHAOS - 50 HITS IN 30 SEC"
+      }
+    ];
+
+    let currentLevelIdx = 0;
+    let score = 0;
+    let targetScore = LEVEL_CONFIGS[0].targetScore;
+    let timeLeft = LEVEL_CONFIGS[0].timeLimit;
+    let isGameOver = false;
+    let modalMode = 'none'; // 'none', 'level_clear', 'game_over', 'victory'
+    let selectedCharacter = 'Butt-head'; // 'Butt-head' or 'Beavis'
+
+    // Rapid spitting cooldown (tuned for 35 & 50 hits in 30 sec)
+    let spitCooldown = 0;
+    const SPIT_COOLDOWN_TIME = 0.14; // allows fluid rapid-fire spitting
+
+    // Wind system (-4 to +4)
+    let wind = 1.5;
+    let windChangeTimer = 3.5;
+    let windsockFrame = 0;
+
+    // Player position along rooftop ledge
+    const player = {
+      x: 320,
+      y: 430,
+      vx: 0,
+      speed: 6.2, // Snappier movement
+      isSpitting: false,
+      spitAnimTimer: 0
+    };
+
+    // Keyboard keys state
+    const keys = {
+      left: false,
+      right: false
+    };
+
+    // Projectiles & Entities
+    let loogies = [];
+    let pedestrians = [];
+    let cars = [];
+    let splatters = [];
+    let speechBubbles = [];
+    let squirrel = {
+      x: 270,
+      y: 80,
+      speed: 1.4,
+      active: true,
+      minX: 245,
+      maxX: 365
+    };
+
+    let pedSpawnTimer = 0.5;
+    let carSpawnTimer = 3.0;
+    let ambientChatterTimer = 1.2;
+
+    const AMBIENT_CHATTER = [
+      "WEN INK",
+      "WEN TGE",
+      "WEN Airdrop",
+      "Stop Farming community"
+    ];
+
+    /* =========================================================
+       PEDESTRIAN TYPES (TOP-DOWN VIEW)
+       ========================================================= */
+    const PED_TYPES = [
+      {
+        name: 'Principal McVicker',
+        suitColor: '#3d5248',
+        baldSpot: true,
+        hairColor: '#4b4b4b',
+        radius: 18,
+        speed: 1.1,
+        yPlane: 255, // plaza / sidewalk walkway
+        phrases: [
+          "UH-HUH-HUH, DAMMIT BEAVIS!!",
+          "EXPELLED!! BOTH OF YA!!",
+          "ARRGH MY TOUPEE!!",
+          "YOU LITTLE DELINQUENTS!!",
+          "CALL THE SUPERINTENDENT!!"
+        ]
+      },
+      {
+        name: 'Mr. Anderson',
+        suitColor: '#2563eb',
+        baldSpot: true,
+        hairColor: '#e5e5e5',
+        radius: 17,
+        speed: 0.9,
+        yPlane: 255,
+        phrases: [
+          "What in the Sam Hill?!",
+          "Those buffoons on my lawn!",
+          "I'm callin' the feds!",
+          "That's battery and assault!"
+        ]
+      },
+      {
+        name: 'Highland Nerd',
+        suitColor: '#f97316',
+        baldSpot: false,
+        hairColor: '#ca8a04',
+        radius: 14,
+        speed: 1.8,
+        yPlane: 255,
+        phrases: [
+          "MY CALCULUS HOMEWORK!!",
+          "DISGUSTING BACTERIA!",
+          "EEEEK! BIOHAZARD!!",
+          "I'M TELLING THE TEACHER!"
+        ]
+      },
+      {
+        name: 'Todd / Punk',
+        suitColor: '#171717',
+        baldSpot: false,
+        hairColor: '#1e293b',
+        radius: 16,
+        speed: 2.1,
+        yPlane: 255,
+        phrases: [
+          "COME DOWN HERE YOU WEAKLINGS!",
+          "I'LL BREAK YOUR TEETH!",
+          "WHO SPIT ON MY LEATHER?!"
+        ]
+      },
+      {
+        name: 'Street Walker (Upper)',
+        suitColor: '#8b5cf6',
+        baldSpot: false,
+        hairColor: '#fef08a',
+        radius: 13,
+        speed: 1.4,
+        yPlane: 155, // top street pavement behind wall
+        phrases: [
+          "GROSS!! DIRTY PIGS!",
+          "MY SUITCASE IS RUINED!",
+          "DISGUSTING!"
+        ]
+      }
+    ];
+
+    /* =========================================================
+       LOOGIE PROJECTILE CLASS (True 3D depth towards background)
+       ========================================================= */
+    class Loogie {
+      constructor(startX, startY, isBeavis) {
+        this.x = startX;
+        this.y = startY; // starts in foreground (y ≈ 410)
+        this.zHeight = 35; // height above ground plane
+        this.vx = (wind * 0.7); // initial curve with wind
+        this.vy = -5.8; // moves forward / UP towards the background
+        this.vz = 2.4; // arch gravity curve
+        this.isBeavis = isBeavis;
+        this.size = 9; // scales down as it moves away
+        this.isDead = false;
+        this.tail = [];
+        audio.playSpit(isBeavis);
+      }
+
+      update() {
+        // Wind continuously drifts the loogie horizontally
+        this.x += this.vx + wind * 0.12;
+        this.y += this.vy;
+
+        // Parabolic arc (up then falls to ground plane)
+        this.zHeight += this.vz;
+        this.vz -= 0.14; // gravity
+
+        // Scales down from 9px near player to 3px in distance
+        const depthRatio = Math.max(0.1, (this.y - 120) / (INTERNAL_H - 120));
+        this.size = 3.5 + depthRatio * 5.5;
+
+        // Tail drops
+        this.tail.push({ x: this.x, y: this.y, size: this.size * 0.6, alpha: 0.8 });
+        for (let i = this.tail.length - 1; i >= 0; i--) {
+          this.tail[i].alpha -= 0.1;
+          if (this.tail[i].alpha <= 0) this.tail.splice(i, 1);
+        }
+
+        // Check if hit the ground plane or upper road limit
+        if (this.zHeight <= 0 || this.y <= 95) {
+          this.splat();
+        }
+      }
+
+      splat() {
+        this.isDead = true;
+        audio.playSplat(false);
+        splatters.push({
+          x: this.x,
+          y: this.y,
+          r: this.size * 1.5,
+          alpha: 1.0,
+          color: '#84cc16'
+        });
+      }
+
+      draw(c) {
+        // Ground shadow beneath loogie
+        const shadowY = this.y + Math.max(0, this.zHeight);
+        c.fillStyle = 'rgba(0,0,0,0.3)';
+        c.beginPath();
+        c.ellipse(this.x, shadowY, this.size * 0.9, this.size * 0.4, 0, 0, Math.PI * 2);
+        c.fill();
+
+        // Droplet tail
+        this.tail.forEach(t => {
+          c.fillStyle = `rgba(132, 204, 22, ${t.alpha})`;
+          c.beginPath();
+          c.arc(t.x, t.y, t.size, 0, Math.PI * 2);
+          c.fill();
+        });
+
+        // Main loogie bead
+        c.save();
+        c.translate(this.x, this.y);
+        c.fillStyle = '#bef264';
+        c.beginPath();
+        c.arc(0, 0, this.size, 0, Math.PI * 2);
+        c.fill();
+        c.lineWidth = 1.5;
+        c.strokeStyle = '#365314';
+        c.stroke();
+
+        // White slime shine reflection
+        c.fillStyle = '#ffffff';
+        c.beginPath();
+        c.arc(-this.size * 0.3, -this.size * 0.3, this.size * 0.3, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+    }
+
+    /* =========================================================
+       PEDESTRIAN CLASS (TOP-DOWN BIRD'S EYE VIEW)
+       ========================================================= */
+    class Pedestrian {
+      constructor(type, speedMultiplier = 1.0) {
+        this.type = type;
+        this.fromLeft = Math.random() > 0.5;
+        const baseSpeed = (type.speed + (Math.random() * 0.4 - 0.2)) * speedMultiplier;
+        this.speed = baseSpeed * (this.fromLeft ? 1 : -1);
+        this.x = this.fromLeft ? -45 : INTERNAL_W + 45;
+        this.y = type.yPlane + (Math.random() * 18 - 9);
+        this.radius = type.radius;
+        this.isHit = false;
+        this.hitTimer = 0;
+        this.walkCycle = Math.random() * Math.PI * 2;
+        this.shakeX = 0;
+        this.slimeBlobs = [];
+        this.activeBubble = null;
+      }
+
+      update() {
+        if (!this.isHit) {
+          this.x += this.speed;
+          this.walkCycle += Math.abs(this.speed) * 0.12;
+          if (this.activeBubble) {
+            this.activeBubble.x = this.x;
+            this.activeBubble.y = this.y - 28;
+          }
+        } else {
+          this.hitTimer -= 0.025;
+          this.shakeX = (Math.random() - 0.5) * 8;
+        }
+      }
+
+      hit() {
+        if (this.isHit) return;
+        this.isHit = true;
+        this.hitTimer = 1.8; // Shorter freeze time so pedestrians cycle quickly
+
+        if (this.activeBubble) {
+          const idx = speechBubbles.indexOf(this.activeBubble);
+          if (idx !== -1) speechBubbles.splice(idx, 1);
+          this.activeBubble = null;
+        }
+
+        audio.playSplat(true);
+        audio.playLaughter(selectedCharacter === 'Beavis');
+
+        for (let i = 0; i < 5; i++) {
+          this.slimeBlobs.push({
+            ox: (Math.random() - 0.5) * this.radius * 1.2,
+            oy: (Math.random() - 0.5) * this.radius * 1.2,
+            r: 3 + Math.random() * 5
+          });
+        }
+
+        const phrase = this.type.phrases[Math.floor(Math.random() * this.type.phrases.length)];
+        speechBubbles.push({
+          x: this.x,
+          y: this.y - 28,
+          text: phrase,
+          life: 1.8,
+          isAmbient: false
+        });
+      }
+
+      sayAmbient(text) {
+        if (this.isHit || this.activeBubble) return;
+        const b = {
+          x: this.x,
+          y: this.y - 28,
+          text: text,
+          life: 2.0,
+          isAmbient: true
+        };
+        this.activeBubble = b;
+        speechBubbles.push(b);
+      }
+
+      isOffscreen() {
+        if (this.isHit && this.hitTimer <= 0) return true;
+        if (this.speed > 0 && this.x > INTERNAL_W + 60) return true;
+        if (this.speed < 0 && this.x < -60) return true;
+        return false;
+      }
+
+      draw(c) {
+        c.save();
+        const px = this.x + this.shakeX;
+        const py = this.y;
+        c.translate(px, py);
+
+        // Walking arms swinging in top-down perspective
+        const armSwing = Math.sin(this.walkCycle) * 7;
+
+        // Shadow under pedestrian
+        c.fillStyle = 'rgba(0,0,0,0.35)';
+        c.beginPath();
+        c.ellipse(0, 4, this.radius * 1.2, this.radius * 0.7, 0, 0, Math.PI * 2);
+        c.fill();
+
+        // Shoulders / Coat (Top-down view)
+        c.fillStyle = this.isHit ? '#854d0e' : this.type.suitColor;
+        c.strokeStyle = '#000000';
+        c.lineWidth = 2.5;
+        c.beginPath();
+        c.ellipse(0, 0, this.radius * 1.25, this.radius * 0.85, 0, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+
+        // Hands swinging
+        c.fillStyle = '#fed7aa';
+        c.beginPath();
+        c.arc(-this.radius * 1.2, armSwing, 3.5, 0, Math.PI * 2);
+        c.arc(this.radius * 1.2, -armSwing, 3.5, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+
+        // Head (Circle seen from above)
+        c.fillStyle = this.isHit ? '#ef4444' : '#fecaca'; // Turns fiery red when hit!
+        c.beginPath();
+        c.arc(0, -2, this.radius * 0.65, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+
+        // Hair / Bald spot
+        c.fillStyle = this.type.hairColor;
+        if (this.type.baldSpot) {
+          // Fringe ring around bald head
+          c.beginPath();
+          c.arc(0, -2, this.radius * 0.65, Math.PI * 0.2, Math.PI * 1.8);
+          c.stroke();
+          // Small grey hair tufts
+          c.fillRect(-this.radius * 0.6, -5, 3, 6);
+          c.fillRect(this.radius * 0.5, -5, 3, 6);
+        } else {
+          // Full hair cover
+          c.beginPath();
+          c.arc(0, -3, this.radius * 0.62, 0, Math.PI * 2);
+          c.fill();
+        }
+
+        // Green dripping slime splattered on victim
+        if (this.isHit) {
+          c.fillStyle = '#84cc16';
+          c.strokeStyle = '#14532d';
+          c.lineWidth = 1.5;
+
+          // Main center glob
+          c.beginPath();
+          c.ellipse(0, -2, 10, 8, 0, 0, Math.PI * 2);
+          c.fill();
+          c.stroke();
+
+          // Droplets
+          this.slimeBlobs.forEach(b => {
+            c.beginPath();
+            c.arc(b.ox, b.oy, b.r, 0, Math.PI * 2);
+            c.fill();
+          });
+        }
+
+        c.restore();
+      }
+    }
+
+    /* =========================================================
+       BACKGROUND CARS ON UPPER ROAD
+       ========================================================= */
+    class Car {
+      constructor() {
+        this.fromLeft = Math.random() > 0.5;
+        this.speed = (3.2 + Math.random() * 2) * (this.fromLeft ? 1 : -1);
+        this.x = this.fromLeft ? -100 : INTERNAL_W + 100;
+        this.y = 135;
+        this.color = ['#dc2626', '#2563eb', '#16a34a', '#ca8a04', '#475569'][Math.floor(Math.random() * 5)];
+        this.isHit = false;
+        this.hitTimer = 0;
+      }
+
+      update() {
+        this.x += this.speed;
+        if (this.isHit) this.hitTimer -= 0.02;
+      }
+
+      hit() {
+        if (this.isHit) return;
+        this.isHit = true;
+        this.hitTimer = 2.0;
+        audio.playSplat(true);
+        audio.playLaughter(selectedCharacter === 'Beavis');
+        speechBubbles.push({
+          x: this.x,
+          y: this.y - 20,
+          text: "*HONK HONK!!* WATCH IT YA BRATS!",
+          life: 2.2
+        });
+      }
+
+      isOffscreen() {
+        return (this.speed > 0 && this.x > INTERNAL_W + 120) || (this.speed < 0 && this.x < -120);
+      }
+
+      draw(c) {
+        c.save();
+        c.translate(this.x, this.y);
+
+        // Car body (Top-down view)
+        c.fillStyle = this.color;
+        c.strokeStyle = '#000000';
+        c.lineWidth = 3;
+        c.beginPath();
+        c.roundRect(-36, -14, 72, 28, [8]);
+        c.fill();
+        c.stroke();
+
+        // Roof & Windshields
+        c.fillStyle = '#94a3b8';
+        c.fillRect(-18, -10, 36, 20);
+        c.strokeRect(-18, -10, 36, 20);
+
+        // Splat on car windshield
+        if (this.isHit) {
+          c.fillStyle = '#84cc16';
+          c.beginPath();
+          c.ellipse(0, 0, 16, 10, 0, 0, Math.PI * 2);
+          c.fill();
+        }
+
+        c.restore();
+      }
+    }
+
+    /* =========================================================
+       FAITHFUL BACKGROUND RENDERING (Original Screenshot Style)
+       ========================================================= */
+    function drawOriginalScene(c) {
+      // 1. Top dark asphalt road
+      c.fillStyle = '#2d3748';
+      c.fillRect(0, 0, INTERNAL_W, 230);
+
+      // Road edge / curb shadow
+      c.fillStyle = '#1a202c';
+      c.fillRect(0, 226, INTERNAL_W, 6);
+
+      // 2. HIGHLAND HIGH SCHOOL SIGN ISLAND (Centered around y = 82)
+      c.save();
+      const signX = 220;
+      const signY = 65;
+      const signW = 200;
+      const signH = 46;
+
+      // Green grass planter rounded island
+      c.fillStyle = '#86efac';
+      c.strokeStyle = '#000000';
+      c.lineWidth = 3;
+      c.beginPath();
+      c.roundRect(signX - 45, signY - 8, signW + 90, signH + 16, [24]);
+      c.fill();
+      c.stroke();
+
+      // Inner planter border
+      c.strokeStyle = '#15803d';
+      c.lineWidth = 2;
+      c.stroke();
+
+      // Bushes flanking sign
+      c.fillStyle = '#166534';
+      c.strokeStyle = '#000000';
+      c.lineWidth = 2.5;
+
+      // Left bush
+      c.beginPath();
+      c.arc(signX - 14, signY + 16, 20, 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
+
+      // Right bush
+      c.beginPath();
+      c.arc(signX + signW + 14, signY + 16, 20, 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
+
+      // Concrete engraved sign block
+      c.fillStyle = '#9ca3af';
+      c.strokeStyle = '#000000';
+      c.lineWidth = 2.5;
+      c.fillRect(signX, signY, signW, signH);
+      c.strokeRect(signX, signY, signW, signH);
+
+      // Engraved inner shadow
+      c.fillStyle = '#d1d5db';
+      c.fillRect(signX + 4, signY + 4, signW - 8, signH - 8);
+
+      // Sign Text: "INKLAND HIGH SCHOOL"
+      c.fillStyle = '#1f2937';
+      c.font = 'bold 15px monospace';
+      c.textAlign = 'center';
+      c.fillText('INKLAND', signX + signW / 2, signY + 20);
+      c.fillText('HIGH SCHOOL', signX + signW / 2, signY + 36);
+
+      // Scurrying squirrel on the sign
+      if (squirrel.active) {
+        c.fillStyle = '#b45309';
+        c.strokeStyle = '#000';
+        c.lineWidth = 1.5;
+        c.fillRect(squirrel.x, squirrel.y - 12, 16, 8);
+        c.beginPath();
+        c.arc(squirrel.x + 18, squirrel.y - 8, 4, 0, Math.PI * 2);
+        c.arc(squirrel.x - 4, squirrel.y - 12, 6, 0, Math.PI * 2); // bushy tail
+        c.fill();
+        c.stroke();
+      }
+
+      // WINDSOCK / FLAG ON POLE (Right of the sign)
+      const poleX = signX + signW + 42;
+      const poleY = signY + 16;
+
+      // Base & Metal Pole
+      c.fillStyle = '#6b7280';
+      c.beginPath();
+      c.arc(poleX, poleY, 12, 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
+
+      c.lineWidth = 4;
+      c.strokeStyle = '#9ca3af';
+      c.beginPath();
+      c.moveTo(poleX, poleY);
+      c.lineTo(poleX + 16, poleY - 26);
+      c.stroke();
+
+      // Red & White Striped Windsock fluttering
+      c.save();
+      c.translate(poleX + 16, poleY - 26);
+      // Wind pushes windsock angle
+      const sockAngle = (wind * 0.16) - 0.4;
+      c.rotate(sockAngle);
+
+      const wave = Math.sin(windsockFrame * 0.3) * 3;
+      c.lineWidth = 2;
+      c.strokeStyle = '#000000';
+
+      // Red stripe 1
+      c.fillStyle = '#dc2626';
+      c.beginPath();
+      c.moveTo(0, -10);
+      c.lineTo(16, -8 + wave);
+      c.lineTo(16, 8 + wave);
+      c.lineTo(0, 10);
+      c.closePath();
+      c.fill();
+      c.stroke();
+
+      // White stripe 1
+      c.fillStyle = '#ffffff';
+      c.beginPath();
+      c.moveTo(16, -8 + wave);
+      c.lineTo(32, -6 - wave);
+      c.lineTo(32, 6 - wave);
+      c.lineTo(16, 8 + wave);
+      c.closePath();
+      c.fill();
+      c.stroke();
+
+      // Red stripe 2
+      c.fillStyle = '#dc2626';
+      c.beginPath();
+      c.moveTo(32, -6 - wave);
+      c.lineTo(48, -4 + wave);
+      c.lineTo(48, 4 + wave);
+      c.lineTo(32, 6 - wave);
+      c.closePath();
+      c.fill();
+      c.stroke();
+      c.restore();
+
+      c.restore();
+
+      // 3. MIDDLE CONCRETE PLAZA & ENTRANCE (y = 230 to 350)
+      // Concrete sidewalk base
+      c.fillStyle = '#9ca3af';
+      c.fillRect(0, 230, INTERNAL_W, 120);
+
+      // Lawn stripes flanking stairs
+      c.fillStyle = '#86efac';
+      c.fillRect(0, 280, 220, 70);
+      c.fillRect(420, 280, 220, 70);
+
+      // Rounded bushes along the lawn
+      c.fillStyle = '#15803d';
+      c.strokeStyle = '#000';
+      c.lineWidth = 2.5;
+      [35, 110, 175, 460, 525, 595].forEach(bx => {
+        c.beginPath();
+        c.arc(bx, 345, 22, Math.PI, 0);
+        c.fill();
+        c.stroke();
+      });
+
+      // School entrance concrete stairs (Perspective angle)
+      const stairLeft = 250;
+      const stairRight = 390;
+      c.fillStyle = '#d1d5db';
+      c.strokeStyle = '#4b5563';
+      c.lineWidth = 2;
+
+      // Side balustrades
+      c.fillStyle = '#9ca3af';
+      c.fillRect(stairLeft - 22, 270, 22, 80);
+      c.strokeRect(stairLeft - 22, 270, 22, 80);
+      c.fillRect(stairRight, 270, 22, 80);
+      c.strokeRect(stairRight, 270, 22, 80);
+
+      // Concrete stair steps
+      for (let s = 0; s < 7; s++) {
+        const sy = 275 + s * 10;
+        c.fillStyle = s % 2 === 0 ? '#e5e7eb' : '#cbd5e1';
+        c.fillRect(stairLeft, sy, stairRight - stairLeft, 10);
+        c.strokeRect(stairLeft, sy, stairRight - stairLeft, 10);
+      }
+
+      // 4. LOWER FOREGROUND: Tiled school roof and skylights (y = 350 to 480)
+      c.fillStyle = '#d97706'; // Warm ochre roof tile
+      c.fillRect(0, 350, INTERNAL_W, 130);
+
+      // Diagonal roof seams and skylight window frames
+      c.strokeStyle = '#451a03';
+      c.lineWidth = 3;
+      c.strokeRect(0, 350, INTERNAL_W, 130);
+
+      // Skylight windows with wooden frames
+      const windowBoxes = [
+        { x: 30, y: 355, w: 160, h: 42 },
+        { x: 230, y: 355, w: 180, h: 42 },
+        { x: 450, y: 355, w: 160, h: 42 }
+      ];
+
+      windowBoxes.forEach(win => {
+        c.fillStyle = '#78350f';
+        c.fillRect(win.x, win.y, win.w, win.h);
+        c.strokeRect(win.x, win.y, win.w, win.h);
+
+        // Glass panes
+        c.fillStyle = '#e2e8f0';
+        c.fillRect(win.x + 6, win.y + 6, win.w / 2 - 10, win.h - 12);
+        c.strokeRect(win.x + 6, win.y + 6, win.w / 2 - 10, win.h - 12);
+
+        c.fillRect(win.x + win.w / 2 + 2, win.y + 6, win.w / 2 - 10, win.h - 12);
+        c.strokeRect(win.x + win.w / 2 + 2, win.y + 6, win.w / 2 - 10, win.h - 12);
+      });
+
+      // Concrete parapet ledge where characters lean
+      c.fillStyle = '#9ca3af';
+      c.fillRect(0, 420, INTERNAL_W, 60);
+      c.strokeStyle = '#1f2937';
+      c.lineWidth = 3;
+      c.strokeRect(0, 420, INTERNAL_W, 60);
+
+      // Parapet concrete seams
+      for (let px = 0; px < INTERNAL_W; px += 140) {
+        c.beginPath();
+        c.moveTo(px, 420);
+        c.lineTo(px, 480);
+        c.stroke();
+      }
+    }
+
+    /* =========================================================
+       BEHIND-THE-HEAD SLACKER GRAPHICS (Player Character)
+       ========================================================= */
+    function drawPlayerCharacter(c) {
+      const px = player.x;
+      const py = player.y;
+      const isBeavis = selectedCharacter === 'Beavis';
+      const bobY = player.isSpitting ? Math.sin(player.spitAnimTimer * 20) * 5 : 0;
+
+      c.save();
+      c.translate(px, py + bobY);
+
+      // Hands gripping the concrete parapet ledge
+      c.fillStyle = '#fed7aa';
+      c.strokeStyle = '#000000';
+      c.lineWidth = 2.5;
+
+      // Left hand
+      c.beginPath();
+      c.roundRect(-52, -4, 22, 16, [4]);
+      c.fill();
+      c.stroke();
+      // Fingers
+      for (let f = 0; f < 3; f++) {
+        c.strokeRect(-50 + f * 6, -4, 5, 10);
+      }
+
+      // Right hand
+      c.beginPath();
+      c.roundRect(32, -4, 22, 16, [4]);
+      c.fill();
+      c.stroke();
+      for (let f = 0; f < 3; f++) {
+        c.strokeRect(34 + f * 6, -4, 5, 10);
+      }
+
+      // Shoulders / Shirt seen from back
+      c.fillStyle = isBeavis ? '#0284c7' : '#374151'; // Beavis Blue or Butt-head Grey
+      c.beginPath();
+      c.ellipse(0, 34, 46, 26, 0, 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
+
+      // Head & Hair seen from back (Exact iconic silhouettes from the game)
+      if (isBeavis) {
+        // --- BEAVIS: Huge Tall Blonde Pompadour Hair ---
+        c.fillStyle = '#fde047';
+        c.beginPath();
+        c.moveTo(-24, 10);
+        c.lineTo(-28, -35);
+        c.lineTo(-15, -60);
+        c.lineTo(15, -60);
+        c.lineTo(28, -35);
+        c.lineTo(24, 10);
+        c.closePath();
+        c.fill();
+        c.stroke();
+
+        // Hair texture / ridges
+        c.strokeStyle = '#ca8a04';
+        c.lineWidth = 2;
+        c.beginPath();
+        c.moveTo(-10, -50);
+        c.lineTo(-12, 0);
+        c.moveTo(5, -52);
+        c.lineTo(4, 5);
+        c.stroke();
+      } else {
+        // --- BUTT-HEAD: Tall Brown Curly Textured Hair ---
+        c.fillStyle = '#5c3a21';
+        c.beginPath();
+        c.ellipse(0, -10, 32, 42, 0, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+
+        // Iconic scribbly/dithered hair curls
+        c.fillStyle = '#3a2010';
+        for (let dy = -40; dy <= 15; dy += 8) {
+          for (let dx = -20; dx <= 20; dx += 8) {
+            if (Math.hypot(dx, dy) < 26) {
+              c.fillRect(dx + (dy % 4), dy, 4, 4);
+            }
+          }
+        }
+      }
+
+      c.restore();
+    }
+
+    /* =========================================================
+       AUTHENTIC 1995 MTV CHUNKY HUD (LEVEL, SCORE & TIME)
+       ========================================================= */
+    function drawHUD(c) {
+      c.save();
+      c.font = 'bold 32px "VT323", monospace';
+      c.letterSpacing = '1.5px';
+
+      const levelStr = `LVL: ${currentLevelIdx + 1}/3`;
+      const scoreStr = `SCORE: ${score}/${targetScore}`;
+      const timeStr = `TIME: ${Math.ceil(timeLeft)}`;
+
+      // Drop shadows
+      c.fillStyle = '#000000';
+      c.fillText(levelStr, 18, 38);
+      c.fillText(scoreStr, 175, 38);
+      c.fillText(timeStr, INTERNAL_W - 138, 38);
+
+      // White font with black outline
+      c.lineWidth = 3;
+      c.strokeStyle = '#000000';
+
+      // Level
+      c.fillStyle = '#facc15';
+      c.strokeText(levelStr, 16, 36);
+      c.fillText(levelStr, 16, 36);
+
+      // Score
+      c.fillStyle = score >= targetScore ? '#4ade80' : '#ffffff';
+      c.strokeText(scoreStr, 173, 36);
+      c.fillText(scoreStr, 173, 36);
+
+      // Time (blinks red when low)
+      c.fillStyle = (timeLeft <= 5 && Math.floor(timeLeft * 4) % 2 === 0) ? '#ef4444' : '#ffffff';
+      c.strokeText(timeStr, INTERNAL_W - 140, 36);
+      c.fillText(timeStr, INTERNAL_W - 140, 36);
+
+      c.restore();
+    }
+
+    /* =========================================================
+       COMIC SPEECH BUBBLE SYSTEM
+       ========================================================= */
+    function drawSpeechBubbles(c) {
+      for (let i = speechBubbles.length - 1; i >= 0; i--) {
+        const bubble = speechBubbles[i];
+        bubble.life -= 0.02;
+        if (bubble.life <= 0) {
+          // Detach reference if it belonged to a pedestrian
+          pedestrians.forEach(p => {
+            if (p.activeBubble === bubble) p.activeBubble = null;
+          });
+          speechBubbles.splice(i, 1);
+          continue;
+        }
+
+        c.save();
+        c.font = 'bold 15px "VT323", monospace';
+        const txtW = c.measureText(bubble.text).width;
+        const bW = txtW + 18;
+        const bH = 26;
+        const bx = Math.max(10, Math.min(INTERNAL_W - bW - 10, bubble.x - bW / 2));
+        const by = bubble.y - bH;
+
+        // Shadow
+        c.fillStyle = 'rgba(0,0,0,0.4)';
+        c.fillRect(bx + 3, by + 3, bW, bH);
+
+        // White bubble with black border (slight yellowish tint for pre-hit ambient chatter)
+        c.fillStyle = bubble.isAmbient ? '#fef08a' : '#ffffff';
+        c.strokeStyle = '#000000';
+        c.lineWidth = 2.5;
+        c.fillRect(bx, by, bW, bH);
+        c.strokeRect(bx, by, bW, bH);
+
+        // Bubble pointer
+        c.beginPath();
+        c.moveTo(bubble.x - 4, by + bH);
+        c.lineTo(bubble.x, by + bH + 6);
+        c.lineTo(bubble.x + 4, by + bH);
+        c.fillStyle = bubble.isAmbient ? '#fef08a' : '#ffffff';
+        c.fill();
+        c.stroke();
+
+        // Text (Red for angry hits, Dark charcoal for ambient questions)
+        c.fillStyle = bubble.isAmbient ? '#0f172a' : '#b91c1c';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(bubble.text, bx + bW / 2, by + bH / 2 + 1);
+        c.restore();
+      }
+    }
+
+    /* =========================================================
+       SPITTING & ACTIONS
+       ========================================================= */
+    function doSpit() {
+      if (isGameOver || spitCooldown > 0) return;
+      audio.init();
+
+      spitCooldown = SPIT_COOLDOWN_TIME;
+      player.isSpitting = true;
+      player.spitAnimTimer = 0.22;
+
+      // Spawn loogie from mouth
+      loogies.push(new Loogie(player.x, player.y - 20, selectedCharacter === 'Beavis'));
+    }
+
+    function switchCharacter() {
+      audio.init();
+      selectedCharacter = selectedCharacter === 'Butt-head' ? 'Beavis' : 'Butt-head';
+      document.getElementById('charNameDisplay').textContent = selectedCharacter.toUpperCase();
+      audio.playLaughter(selectedCharacter === 'Beavis');
+    }
+
+    /* =========================================================
+       COLLISION LOGIC
+       ========================================================= */
+    function checkCollisions() {
+      loogies.forEach(loogie => {
+        if (loogie.isDead) return;
+
+        // 1. Check Pedestrians (Generous hit detection for fast scoring)
+        pedestrians.forEach(ped => {
+          if (ped.isHit || loogie.isDead) return;
+
+          const dist = Math.hypot(loogie.x - ped.x, loogie.y - ped.y);
+          if (dist < ped.radius + loogie.size + 9) {
+            loogie.splat();
+            ped.hit();
+            score++;
+            if (score >= targetScore) {
+              handleLevelComplete();
+            }
+          }
+        });
+
+        // 2. Check Cars
+        cars.forEach(car => {
+          if (car.isHit || loogie.isDead) return;
+          if (Math.abs(loogie.x - car.x) < 42 && Math.abs(loogie.y - car.y) < 22) {
+            loogie.splat();
+            car.hit();
+            score++;
+            if (score >= targetScore) {
+              handleLevelComplete();
+            }
+          }
+        });
+
+        // 3. Check Squirrel on sign
+        if (squirrel.active && !loogie.isDead) {
+          if (Math.abs(loogie.x - squirrel.x) < 22 && Math.abs(loogie.y - squirrel.y) < 18) {
+            loogie.splat();
+            squirrel.active = false;
+            audio.playSplat(true);
+            audio.playLaughter(true);
+            speechBubbles.push({
+              x: squirrel.x,
+              y: squirrel.y - 20,
+              text: "*SQUEEEEAK!!*",
+              life: 1.8
+            });
+            score += 2;
+            if (score >= targetScore) {
+              handleLevelComplete();
+            }
+          }
+        }
+      });
+    }
+
+    /* =========================================================
+       LEVEL PROGRESSION & MODAL SYSTEM
+       ========================================================= */
+    function showModal(title, desc, scoreText, btnText, mode, titleColorClass) {
+      modalMode = mode;
+      isGameOver = true;
+
+      const overlay = document.getElementById('endOverlay');
+      const titleElem = document.getElementById('endTitle');
+      const descElem = document.getElementById('endDesc');
+      const finalScoreElem = document.getElementById('finalScoreText');
+      const btnElem = document.getElementById('modalActionBtn');
+
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+
+      titleElem.textContent = title;
+      titleElem.className = `text-3xl arcade-font ${titleColorClass} mb-2 font-bold`;
+      descElem.textContent = desc;
+      finalScoreElem.textContent = scoreText;
+      btnElem.textContent = btnText;
+    }
+
+    function handleLevelComplete() {
+      audio.playLaughter(true);
+      if (currentLevelIdx < LEVEL_CONFIGS.length - 1) {
+        // Next Level available
+        showModal(
+          `LEVEL ${currentLevelIdx + 1} CLEARED! 🎸`,
+          `"Whoa, dude! You actually nailed ${targetScore} targets! Ready for faster chumps?"`,
+          `SCORE: ${score} / ${targetScore} (COMPLETED!)`,
+          `Proceed to Level ${currentLevelIdx + 2} (Enter)`,
+          'level_clear',
+          'text-green-700'
+        );
+      } else {
+        // Victory! Completed all 3 levels
+        showModal(
+          `CERTIFIED INK CHAD! 👑⚡`,
+          `"WHOA!! You got 50 hits in 30 seconds!! You are the ultimate rooftop god! Huh-huh-huh!"`,
+          `FINAL INK SCORE: ${score} / ${targetScore}`,
+          `Restart from Level 1 (Enter)`,
+          'victory',
+          'text-yellow-600'
+        );
+      }
+    }
+
+    function handleTimeout() {
+      showModal(
+        `TIME'S UP, BUTT-MUNCH! 💩`,
+        `"Huh-huh... You missed the quota! Only ${score} out of ${targetScore}! That sucked."`,
+        `FINAL SCORE: ${score} / ${targetScore}`,
+        `Retry Level ${currentLevelIdx + 1} (Enter)`,
+        'game_over',
+        'text-red-700'
+      );
+    }
+
+    function initLevel(lvlIdx) {
+      currentLevelIdx = lvlIdx;
+      const cfg = LEVEL_CONFIGS[lvlIdx];
+      score = 0;
+      targetScore = cfg.targetScore;
+      timeLeft = cfg.timeLimit;
+      isGameOver = false;
+      modalMode = 'none';
+
+      loogies = [];
+      pedestrians = [];
+      cars = [];
+      splatters = [];
+      speechBubbles = [];
+      squirrel.active = true;
+      pedSpawnTimer = 0.2;
+      carSpawnTimer = 2.0;
+
+      document.getElementById('endOverlay').classList.add('hidden');
+      document.getElementById('endOverlay').classList.remove('flex');
+    }
+
+    function handleModalAction() {
+      if (modalMode === 'level_clear') {
+        initLevel(currentLevelIdx + 1);
+      } else if (modalMode === 'game_over') {
+        initLevel(currentLevelIdx); // Retry same level
+      } else if (modalMode === 'victory') {
+        initLevel(0); // Start over from level 1
+      }
+    }
+
+    /* =========================================================
+       MAIN LOOP & UPDATES
+       ========================================================= */
+    function updateGame(delta) {
+      if (isGameOver) return;
+
+      const currentCfg = LEVEL_CONFIGS[currentLevelIdx];
+
+      // Update timer
+      timeLeft -= delta;
+      if (timeLeft <= 0) {
+        timeLeft = 0;
+        if (score >= targetScore) {
+          handleLevelComplete();
+        } else {
+          handleTimeout();
+        }
+        return;
+      }
+
+      // Spit cooldown tick
+      if (spitCooldown > 0) {
+        spitCooldown -= delta;
+      }
+
+      // Wind updates
+      windChangeTimer -= delta;
+      windsockFrame += delta * 60;
+      if (windChangeTimer <= 0) {
+        wind = (Math.random() * 6.4 - 3.2); // Wind variation
+        windChangeTimer = 2.8 + Math.random() * 3.0;
+      }
+
+      // Player Movement
+      player.vx = 0;
+      if (keys.left) player.vx = -player.speed;
+      if (keys.right) player.vx = player.speed;
+      player.x = Math.max(90, Math.min(INTERNAL_W - 90, player.x + player.vx));
+
+      // Spit recoil animation
+      if (player.isSpitting) {
+        player.spitAnimTimer -= delta;
+        if (player.spitAnimTimer <= 0) player.isSpitting = false;
+      }
+
+      // Scurrying squirrel
+      if (squirrel.active) {
+        squirrel.x += squirrel.speed * currentCfg.pedSpeedMult;
+        if (squirrel.x > squirrel.maxX || squirrel.x < squirrel.minX) {
+          squirrel.speed *= -1;
+        }
+      }
+
+      // Spawn pedestrians based on current level intensity
+      pedSpawnTimer -= delta;
+      if (pedSpawnTimer <= 0) {
+        if (pedestrians.length < currentCfg.maxPedsOnScreen) {
+          const type = PED_TYPES[Math.floor(Math.random() * PED_TYPES.length)];
+          pedestrians.push(new Pedestrian(type, currentCfg.pedSpeedMult));
+        }
+        pedSpawnTimer = currentCfg.spawnIntervalMin + Math.random() * (currentCfg.spawnIntervalMax - currentCfg.spawnIntervalMin);
+      }
+
+      // Staggered ambient pedestrian chatter
+      ambientChatterTimer -= delta;
+      if (ambientChatterTimer <= 0) {
+        const availablePeds = pedestrians.filter(p => !p.isHit && !p.activeBubble && p.x > 50 && p.x < INTERNAL_W - 50);
+        if (availablePeds.length > 0) {
+          const chosenPed = availablePeds[Math.floor(Math.random() * availablePeds.length)];
+          const phrase = AMBIENT_CHATTER[Math.floor(Math.random() * AMBIENT_CHATTER.length)];
+          chosenPed.sayAmbient(phrase);
+        }
+        ambientChatterTimer = 1.2 + Math.random() * 1.8;
+      }
+
+      // Spawn cars on upper street
+      carSpawnTimer -= delta;
+      if (carSpawnTimer <= 0) {
+        cars.push(new Car());
+        carSpawnTimer = currentCfg.carInterval + Math.random() * 2.0;
+      }
+
+      // Update Loogies
+      loogies.forEach(l => l.update());
+      loogies = loogies.filter(l => !l.isDead);
+
+      // Update Pedestrians
+      pedestrians.forEach(p => p.update());
+      pedestrians = pedestrians.filter(p => !p.isOffscreen());
+
+      // Update Cars
+      cars.forEach(c => c.update());
+      cars = cars.filter(c => !c.isOffscreen());
+
+      // Splatters fade
+      splatters.forEach(s => s.alpha -= delta * 0.18);
+      splatters = splatters.filter(s => s.alpha > 0);
+
+      // Collisions
+      checkCollisions();
+    }
+
+    function renderGame() {
+      // 1. Draw 1995 Authentic Scene
+      drawOriginalScene(ctx);
+
+      // 2. Ground Splatters
+      splatters.forEach(s => {
+        ctx.fillStyle = `rgba(132, 204, 22, ${s.alpha})`;
+        ctx.beginPath();
+        ctx.ellipse(s.x, s.y, s.r, s.r * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 3. Cars
+      cars.forEach(c => c.draw(ctx));
+
+      // 4. Pedestrians
+      pedestrians.forEach(p => p.draw(ctx));
+
+      // 5. Loogies
+      loogies.forEach(l => l.draw(ctx));
+
+      // 6. Speech Bubbles
+      drawSpeechBubbles(ctx);
+
+      // 7. Slacker Character Foreground (Player)
+      drawPlayerCharacter(ctx);
+
+      // 8. Authentic Retro HUD
+      drawHUD(ctx);
+    }
+
+    let lastTime = performance.now();
+    function loop(now) {
+      const delta = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+      updateGame(delta);
+      renderGame();
+      requestAnimationFrame(loop);
+    }
+
+    /* =========================================================
+       EVENT LISTENERS & CONTROLS
+       ========================================================= */
+    window.addEventListener('keydown', (e) => {
+      audio.init();
+      if (e.code === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        keys.left = true;
+      }
+      if (e.code === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        keys.right = true;
+      }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        doSpit();
+      }
+      if (e.code === 'Tab') {
+        e.preventDefault();
+        switchCharacter();
+      }
+      if (e.code === 'Enter' && isGameOver) {
+        handleModalAction();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        keys.left = false;
+      }
+      if (e.code === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        keys.right = false;
+      }
+    });
+
+    // Touch & UI Controls
+    const btnLeft = document.getElementById('btnMoveLeft');
+    const btnRight = document.getElementById('btnMoveRight');
+    const btnSpit = document.getElementById('btnSpit');
+    const btnSwitch = document.getElementById('btnSwitchChar');
+    const modalBtn = document.getElementById('modalActionBtn');
+
+    btnLeft.addEventListener('mousedown', () => keys.left = true);
+    btnLeft.addEventListener('mouseup', () => keys.left = false);
+    btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
+    btnLeft.addEventListener('touchend', () => keys.left = false);
+
+    btnRight.addEventListener('mousedown', () => keys.right = true);
+    btnRight.addEventListener('mouseup', () => keys.right = false);
+    btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
+    btnRight.addEventListener('touchend', () => keys.right = false);
+
+    btnSpit.addEventListener('click', () => doSpit());
+    btnSwitch.addEventListener('click', () => switchCharacter());
+    modalBtn.addEventListener('click', () => handleModalAction());
+
+    // Clicking on canvas directly aims and spits
+    canvas.addEventListener('click', (e) => {
+      if (isGameOver) {
+        handleModalAction();
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const clickX = ((e.clientX - rect.left) / rect.width) * INTERNAL_W;
+      player.x = Math.max(90, Math.min(INTERNAL_W - 90, clickX));
+      doSpit();
+    });
+
+    window.onload = function () {
+      initLevel(0);
+      requestAnimationFrame(loop);
+    };
+  </script>
+</body>
+</html>
